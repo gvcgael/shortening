@@ -131,3 +131,7 @@ dmypy.json
 # Virtualenv
 
 shortening_env
+
+# vegeta
+
+results.bin
