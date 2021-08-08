@@ -7,13 +7,14 @@ import hashlib
 @attr.s
 class ShortenerApp:
   app = attrib()
+  _domain_name = attrib()
   _shortened = attrib(default=dict())
 
   @classmethod
-  def instanciate(cls):
+  def instanciate(cls, domain_name):
     app = web.Application(middlewares=[cls.middleware_factory])
 
-    shortener = cls(app)
+    shortener = cls(app, domain_name)
     app.add_routes(
       [
         web.post(r'/api/v1/shorten/{url:.+}', shortener.shorten),
@@ -41,16 +42,17 @@ class ShortenerApp:
         # Check if the identifier (hash) is already in the shortened links
         existing = self._shortened[identifier]
         # If the URL matches the one in the shortened links, lets return it
-        if existing is url:
-          return web.Response(text=identifier)
+        if existing == url:
+          return web.Response(text="{}/{}".format(self._domain_name, identifier))
         # Else we return a 409 (Conflict) to the first link using this identifier
         # This should be really rare since it needs a hash collision but
         # this could happen since we are using a short version of shake 128 
         else:
-          return web.Response(text=self._shortened[identifier], status=409)
+          print("{} : {} != {}".format(identifier, existing, url))
+          return web.Response(text="{}/{}".format(self._domain_name, existing), status=409)
       except KeyError:
         self._shortened[identifier] = url
-        return web.Response(text=identifier)
+        return web.Response(text="{}/{}".format(self._domain_name, identifier))
 
   async def lookup(self, request):
       identifier = request.match_info.get('identifier')
@@ -58,6 +60,3 @@ class ShortenerApp:
         return web.Response(text=self._shortened[identifier])
       except KeyError:
         raise web.HTTPNotFound
-
-  def nb_shortened_links(self):
-    return len(self._shortened)

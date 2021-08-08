@@ -5,7 +5,7 @@ from shortener import ShortenerApp
 
 @pytest.fixture
 def shortener():
-    return ShortenerApp.instanciate()
+    return ShortenerApp.instanciate(domain_name="localhost")
 
 @pytest.fixture
 def cli(loop, aiohttp_client, shortener):
