@@ -13,7 +13,7 @@ PYTHONPATH=src py.test tests/
 
 Run the server : 
 ```
-PYTHONPATH=src python3 -m shortener
+PYTHONPATH=src python3 -m shortener --domain domain.tld --port 8080
 ```
 
 Run the vegeta tests :
