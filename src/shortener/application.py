@@ -26,8 +26,6 @@ class ShortenerApp:
   async def middleware_factory(cls, app, handler):
       async def middleware_handler(request):
           try:
-              print(request.path)
-              print([r for r in app.router.routes()])
               resp = await handler(request)
               return resp
           except web.HTTPNotFound:
@@ -37,16 +35,29 @@ class ShortenerApp:
       return middleware_handler
   
   async def shorten(self, request):
-      print("shorten")
       url = request.match_info.get('url')
       identifier = hashlib.shake_128(url.encode()).hexdigest(5)
-      self._shortened[identifier] = url
-      return web.Response(text=identifier)
+      try:
+        # Check if the identifier (hash) is already in the shortened links
+        existing = self._shortened[identifier]
+        # If the URL matches the one in the shortened links, lets return it
+        if existing is url:
+          return web.Response(text=identifier)
+        # Else we return a 409 (Conflict) to the first link using this identifier
+        # This should be really rare since it needs a hash collision but
+        # this could happen since we are using a short version of shake 128 
+        else:
+          return web.Response(text=self._shortened[identifier], status=409)
+      except KeyError:
+        self._shortened[identifier] = url
+        return web.Response(text=identifier)
 
   async def lookup(self, request):
-      print("lookup")
       identifier = request.match_info.get('identifier')
       try:
         return web.Response(text=self._shortened[identifier])
       except KeyError:
         raise web.HTTPNotFound
+
+  def nb_shortened_links(self):
+    return len(self._shortened)
